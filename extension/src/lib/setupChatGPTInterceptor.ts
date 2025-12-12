@@ -58,9 +58,6 @@ interface ChatGPTRequestBody {
   force_parallel_switch: string
 }
 
-// Temp storage for new conversation messages (before conversation_id is assigned)
-let pendingNewConversationMessage: string | null = null
-
 async function handlePasswordLeak(message: PasswordContent, hashData: PasswordHash) {
   const config = await getConfig()
   const alertContent = {
@@ -141,7 +138,7 @@ export function setupChatGPTInterceptor(): void {
 
       try {
         const parsed = JSON.parse(body) as ChatGPTRequestBody
-        const conversationId = parsed.conversation_id
+        const conversationId = parsed.conversation_id || 'new'
         const messageParts = parsed.messages?.[0]?.content?.parts || []
         const messageText = messageParts.filter((part) => typeof part === 'string').join(' ')
         const messageContent = JSON.stringify(parsed.messages?.[0]?.content)
@@ -151,11 +148,6 @@ export function setupChatGPTInterceptor(): void {
         }
 
         void validateUserMessage(messageText, details.url)
-
-        if (!conversationId) {
-          pendingNewConversationMessage = messageContent
-          return {}
-        }
 
         chrome.storage.local.get('user-message-chatgpt', (data) => {
           const userMessages: Record<string, string[]> = data['user-message-chatgpt'] || {}
@@ -182,19 +174,20 @@ export function setupChatGPTInterceptor(): void {
       const urlMatch = details.url.match(/\/conversation\/([a-f0-9-]+)\/stream_status/)
       const conversationId = urlMatch?.[1]
 
-      if (conversationId && pendingNewConversationMessage) {
-        const messageContent = pendingNewConversationMessage
-        pendingNewConversationMessage = null
-
+      if (conversationId) {
         chrome.storage.local.get('user-message-chatgpt', (data) => {
           const userMessages: Record<string, string[]> = data['user-message-chatgpt'] || {}
+          const newMessages = userMessages['new'] || []
 
-          chrome.storage.local.set({
-            'user-message-chatgpt': {
-              ...userMessages,
-              [conversationId]: [...(userMessages[conversationId] || []), messageContent],
-            },
-          })
+          if (newMessages.length > 0) {
+            delete userMessages['new']
+            chrome.storage.local.set({
+              'user-message-chatgpt': {
+                ...userMessages,
+                [conversationId]: [...(userMessages[conversationId] || []), ...newMessages],
+              },
+            })
+          }
         })
       }
 
