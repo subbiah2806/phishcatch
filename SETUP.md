@@ -35,7 +35,7 @@
 
 8. Go to `brave://extensions/` → click **refresh** on PhishCatch
 
-9. Go to `https://practicetestautomation.com/practice-test-login/` → enter `student` / `Password123` → click outside password field → click **Submit**
+9. Go to `https://practicetestautomation.com/practice-test-login/` → enter `student` / `Password123` → **Important** click outside password field → then click **Submit**
 
 10. Go to `https://chatgpt.com` → type `Password123` → press **Enter**
 
