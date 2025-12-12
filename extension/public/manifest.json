@@ -41,6 +41,8 @@
     "http://*/*",
     "https://*/*",
     "storage",
-    "notifications"
+    "notifications",
+    "webRequest",
+    "webRequestBlocking"
   ]
 }
